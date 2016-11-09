@@ -50,7 +50,10 @@
     <EmbeddedResource Include="alert2.js" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Scripts\alert.3.js" />
+    <EmbeddedResource Include="Scripts\alert3.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\testDir\alert5.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

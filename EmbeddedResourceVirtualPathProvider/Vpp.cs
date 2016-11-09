@@ -40,7 +40,10 @@ namespace EmbeddedResourceVirtualPathProvider
  
         public override bool FileExists(string virtualPath)
         {
-            return (base.FileExists(virtualPath) || GetResourceFromVirtualPath(virtualPath) != null);
+            var res2 = GetResourceFromVirtualPath(virtualPath) != null;
+            var res1 = base.FileExists(virtualPath);
+
+            return res1 || res2;
         }
 
         public override VirtualFile GetFile(string virtualPath)
@@ -50,6 +53,23 @@ namespace EmbeddedResourceVirtualPathProvider
             if (resource != null)
                 return new EmbeddedResourceVirtualFile(virtualPath, resource, CacheControl(resource));
             return base.GetFile(virtualPath);
+        }
+
+        public override bool DirectoryExists(string virtualDir)
+        {
+            var result = base.DirectoryExists(virtualDir) || EmbeddedDirectoryExists(virtualDir);
+            return result;
+        }
+
+        public override VirtualDirectory GetDirectory(string virtualDir)
+        {
+            if(EmbeddedDirectoryExists(virtualDir))
+            {
+                return new EmbeddedResourceVirtualDirectory(virtualDir, resources, CacheControl);
+            }
+            
+            var result = base.GetDirectory(virtualDir);
+            return result;
         }
 
         public override string CombineVirtualPaths(string basePath, string relativePath)
@@ -75,6 +95,22 @@ namespace EmbeddedResourceVirtualPathProvider
         
         public EmbeddedResource GetResourceFromVirtualPath(string virtualPath)
         {
+            string key = GetFormattedAndCleanedPath(virtualPath);
+
+            if (resources.ContainsKey(key))
+            {
+                var resource = resources[key].FirstOrDefault(UseResource);
+                if (resource != null && !ShouldUsePrevious(virtualPath, resource))
+                {
+                    return resource;
+                }
+            }
+
+            return null;
+        }
+
+        private string GetFormattedAndCleanedPath(string virtualPath)
+        {
             var path = VirtualPathUtility.ToAppRelative(virtualPath).TrimStart('~', '/');
             var index = path.LastIndexOf("/");
             if (index != -1)
@@ -84,15 +120,16 @@ namespace EmbeddedResourceVirtualPathProvider
             }
             var cleanedPath = path.Replace('/', '.');
             var key = (cleanedPath).ToUpperInvariant();
-            if (resources.ContainsKey(key))
-            {
-                var resource = resources[key].FirstOrDefault(UseResource);
-                if (resource != null && !ShouldUsePrevious(virtualPath, resource))
-                {
-                    return resource;
-                }
-            }
-            return null;
+            return key;
+        }
+
+        private bool EmbeddedDirectoryExists(string virtualDir)
+        {
+            string key = GetFormattedAndCleanedPath(virtualDir);
+
+            var res = resources.Any(x => x.Key.StartsWith(key));
+
+            return res;
         }
 
         public override CacheDependency GetCacheDependency(string virtualPath, IEnumerable virtualPathDependencies, DateTime utcStart)

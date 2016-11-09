@@ -1,0 +1,1 @@
+﻿alert("Scripts/testDir/alert5.js - works with more complex path edit")
